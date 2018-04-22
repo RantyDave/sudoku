@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+*.xcworkspacedata
+sudoku.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+sudoku.xcodeproj/project.xcworkspace/xcuserdata/dpreece.xcuserdatad/UserInterfaceState.xcuserstate
+*.xcbkptlist
