@@ -1,3 +1,5 @@
+// Yet another Soduku solver. (c) David Preece 2018
+
 #import <vector>
 #import <array>
 #import <set>
@@ -9,7 +11,8 @@ typedef std::array<uint, 3> triplet;
 typedef unsigned short nine[9];
 
 //precompute some factorials
-struct Factorials {
+class Factorials {
+public:
     nine factorial;
     Factorials() {
         factorial[0] = 1;
@@ -22,8 +25,8 @@ struct Factorials {
 };
 Factorials f;
 
-struct Block {
-    //initialise with list, use 0 to mean 'blank'
+class Block {
+public:
     nine positions;
     uint gaps;
     nine gap_indexes;
@@ -31,15 +34,16 @@ struct Block {
     uint combinations;
     nine* result_block;
     
+    //initialise with list, use 0 to mean 'blank'
     Block(uint* in) {
         // copy in, record where the gaps are and which numbers we used.
         gaps=0;
-        bool used[9] = {false, false, false, false, false, false, false, false, false};  // first is actually symbol '1'
+        bool used[9] = {false, false, false, false, false, false, false, false, false};  // first is actually symbol '1' - there is no zero
         for (uint n = 0; n<9; n++) {
             uint next = *(in+n);
             
             // check
-            if ((next != 0) && (used[next-1])) {
+            if ((next != 0) && (used[next-1])) {  // for real code throw an exception
                 printf("Tried to use a number twice\n");
                 exit(1);
             }
@@ -68,7 +72,13 @@ struct Block {
     ~Block() {
         delete[] result_block;
     }
+    
+    // applies a pre-rendered combination into this block
+    void apply_combination(uint combination) {
+        memcpy(positions, result_block[combination], sizeof(nine));
+    }
 
+private:
     void render_combination(uint combination) {
         bool used[9] = {false, false, false, false, false, false, false, false, false};
         
@@ -79,7 +89,7 @@ struct Block {
             uint n = combination / factorial;
             combination -= n * factorial;
             
-            // skip forward 'n' unused symbols
+            // choose the n'th unused symbol
             uint last_available_symbol = 9999;
             uint symbol_idx = 0;
             uint skip=0;
@@ -98,12 +108,11 @@ struct Block {
             positions[gap_indexes[gap]] = last_available_symbol;
         }
     }
-    
-    void apply_combination(uint combination) {
-        memcpy(positions, result_block[combination], sizeof(nine));
-    }
 };
 
+// the puzzle itself
+// *not* input in 'printed' order, each Block is a 3x3 block
+// 0 is blank
 Block blocks[9] = {
     Block((uint[]){3, 7, 0, 0, 8, 5, 1, 0, 0}),
     Block((uint[]){0, 0, 0, 2, 0, 0, 5, 7, 0}),
@@ -116,9 +125,10 @@ Block blocks[9] = {
     Block((uint[]){0, 0, 6, 1, 9, 0, 0, 4, 2})
 };
 
-struct Row {
-    Block *p_b0, *p_b1, *p_b2;
-    std::vector<triplet> valid_horizontal_combinations;
+// a row of three blocks
+class Row {
+public:
+    std::vector<triplet> valid_horizontal_combinations;  /// the list of triplets of which row combinations are valid
     Row(Block* _0, Block* _1, Block* _2) : p_b0(_0), p_b1(_1), p_b2(_2) {};
     
     // apply one of the previously found viable combinations of three that go to make a row
@@ -127,6 +137,9 @@ struct Row {
         p_b1->apply_combination(comb[1]);
         p_b2->apply_combination(comb[2]);
     }
+    
+private:
+    Block *p_b0, *p_b1, *p_b2;
 };
 
 Row rows[3] = {
@@ -135,9 +148,13 @@ Row rows[3] = {
     Row(&blocks[6], &blocks[7], &blocks[8])
 };
 
-struct Line {
+// an 'as printed' line - nine positions covering three blocks
+class Line {
+public:
     // lines are implemented as pointers to positions in blocks
     unsigned short* positions[9];
+    
+    // with the current proposed solution, is this line 'wrong' i.e. uses a given symbol more than once?
     bool is_wrong() {
         // 10 because then we don't have to subtract 1 every time
         bool used[10] = {false, false, false, false, false, false, false, false, false, false};
@@ -148,6 +165,8 @@ struct Line {
         }
         return false;
     }
+    
+    // dump to stdout
     void dump() {
         for (uint n = 0; n < 9; n++) {
             printf("%u ", *positions[n]);
@@ -159,8 +178,11 @@ struct Line {
 Line horizontal_lines[9];
 Line vertical_lines[9];
 
+// For each 3x3 block find available permutations...
+// Find which of these permutations make a valid horizontal line of three blocks
+// Then do the same with the permutations of horizontal lines, finding valid verticals.
 int main(int argc, const char * argv[]) {
-    // initialise the lines
+    // initialise the line pointers
     for (uint block_line=0; block_line<3; block_line++)
         for (uint intra_line=0; intra_line<3; intra_line++)
             for (uint across_block=0; across_block<3; across_block++)
@@ -174,11 +196,6 @@ int main(int argc, const char * argv[]) {
                 for (uint intra_down=0; intra_down<3; intra_down++)
                     vertical_lines[block_column*3 + intra_column].positions[down_block*3 + intra_down] =
                         &blocks[block_column + down_block*3].positions[intra_column + intra_down*3];
-    
-    // list combinations for blocks
-    for (uint block=0; block < 9; block++) {
-        printf("Block %u has %u combinations\n", block, blocks[block].combinations);
-    }
     
     // try combinations of three blocks horizontally to see which produce three valid lines (a successful row)
     uint total_combinations = 1;  // gets multiplied out hence the total starting at 1 (effectively unity)
@@ -203,19 +220,18 @@ int main(int argc, const char * argv[]) {
                     // is this a valid combination?
                     if (line0.is_wrong() || line1.is_wrong() || line2.is_wrong()) continue;
                     
-                    // win!
+                    // then it is a valid combination from a 'horizontal' point of view
                     triplet combination={block0_combination, block1_combination, block2_combination};
                     rows[row].valid_horizontal_combinations.push_back(combination);
                 }
             }
         }
         uint row_combinations = (uint)rows[row].valid_horizontal_combinations.size();
-        printf("Row %u has %u valid combinations\n", row, row_combinations);
         total_combinations *= row_combinations;
     }
-    printf("Searching %u total combinations...\n", total_combinations);
     
     // same again except this time we nest combinations for the rows themselves
+    // using the recently produced valid horizontal combinations
     for (auto row0_combination = rows[0].valid_horizontal_combinations.begin();
             row0_combination != rows[0].valid_horizontal_combinations.end(); row0_combination++) {
         rows[0].apply_row_combination(*row0_combination);
@@ -231,11 +247,13 @@ int main(int argc, const char * argv[]) {
                 for (uint n = 0; (n < 9) && good; n++) {
                     if (vertical_lines[n].is_wrong()) good = false;
                 }
+                
+                // good then it must be valid for horizontal and vertical lines so this is the solution
                 if (good) {
                     for (uint n = 0; n < 9; n++) {
                         horizontal_lines[n].dump();
                     }
-                    exit(0);
+                    return 0;
                 }
             }
         }
