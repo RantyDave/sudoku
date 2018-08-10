@@ -37,8 +37,8 @@ private:
         uint8_t intra_block : 4;
     };
     
-    Line columns[9];
     Line rows[9];
+    Line columns[9];
     Block blocks[9];
     Geometry geometry[81];
     uint8_t empty_positions[81];
