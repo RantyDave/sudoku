@@ -31,10 +31,10 @@ private:
     
     struct Geometry
     {
-        uint8_t column;
-        uint8_t row;
-        uint8_t block;
-        uint8_t intra_block;
+        uint8_t column : 4;
+        uint8_t row : 4;
+        uint8_t block : 4;
+        uint8_t intra_block : 4;
     };
     
     Line columns[9];

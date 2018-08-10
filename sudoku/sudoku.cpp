@@ -85,6 +85,7 @@ void Sudoku::solve()
             rows[geo.row].symbols_used[old_symbol-1]=false;
             columns[geo.column].symbols_used[old_symbol-1]=false;
             blocks[geo.block].symbols_used[old_symbol-1]=false;
+            blocks[geo.block].positions[geo.intra_block]=0;  // take this off and it goes slower, I kid you not
 //            dump(true);
             continue;
         }
