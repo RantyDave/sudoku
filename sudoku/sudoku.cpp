@@ -1,110 +1,117 @@
 #include "sudoku.hpp"
-
+#include <iostream>
 
 Sudoku::Sudoku(const char* init_string)
 {
-    // initialise the line pointers
-    for (uint8_t block_line=0; block_line<3; block_line++)
-        for (uint8_t intra_line=0; intra_line<3; intra_line++)
-            for (uint8_t across_block=0; across_block<3; across_block++)
-                for (uint8_t intra_across=0; intra_across<3; intra_across++)
-                    horizontal_lines[block_line*3 + intra_line].positions[across_block*3 + intra_across] =
-                    &blocks[block_line*3 + across_block].positions[intra_line*3 + intra_across];
-    
-    for (uint8_t block_column=0; block_column<3; block_column++)
-        for (uint8_t intra_column=0; intra_column<3; intra_column++)
-            for (uint8_t down_block=0; down_block<3; down_block++)
-                for (uint8_t intra_down=0; intra_down<3; intra_down++)
-                    vertical_lines[block_column*3 + intra_column].positions[down_block*3 + intra_down] =
-                    &blocks[block_column + down_block*3].positions[intra_column + intra_down*3];
-    
-    // use the horizontal line pointers to initialise from the string
-    for (uint8_t line=0; line<9; line++) {
-        Line* p_line=&horizontal_lines[line];
-        for (uint8_t col=0; col<9; col++) {
-            uint8_t value=0;
-            if (*init_string>'0') value=*init_string-'0';
-            *p_line->positions[col]=value;
-            ++init_string;
+    for (uint8_t n=0; n<81; n++) {
+        // cache geometry
+        uint8_t column=n%9;
+        uint8_t row=n/9;
+        uint8_t block=(row/3)*3+(column/3);
+        uint8_t intra_block=(row%3)*3+(column%3);
+        geometry[n]={ column, row, block, intra_block };
+//        std::cout << "location=" << static_cast<int>(n) <<
+//        " column=" << static_cast<int>(column) << " row=" << static_cast<int>(row) <<
+//        " block=" << static_cast<int>(block) << " intra_block=" << static_cast<int>(intra_block);
+        
+        // store position values and keep track of symbols used
+        uint8_t symbol=0;
+        if ((init_string[n]>='1') && (init_string[n]<='9')) symbol=init_string[n]-'0';
+//        std::cout << " symbol=" << static_cast<int>(symbol) << std::endl;
+        blocks[block].positions[intra_block]=symbol;
+        if (symbol) {
+            rows[row].symbols_used[symbol-1]=true;
+            columns[column].symbols_used[symbol-1]=true;
+            blocks[block].symbols_used[symbol-1]=true;
+        } else {
+            // else keep track of the fact that this is an empty position
+            empty_positions[n_empty_positions++]=n;
         }
     }
 }
 
-void Sudoku::dump()
+void Sudoku::dump(bool in_detail)
 {
-    for (uint32_t n=0; n<9; n++) horizontal_lines[n].dump();
+    // dump the puzzle
+    for (uint8_t location=0; location<81; location++) {
+        Geometry geo=geometry[location];
+        int symbol=blocks[geo.block].positions[geo.intra_block];
+        std::cout << (symbol ? "\033[1;37m" : "\033[0;37m") << symbol << "\033[0;37m ";
+        if (geo.column==8) std::cout << std::endl;
+    }
+    
+    // and symbol usage
+    if (in_detail) {
+        for (unsigned int n=0; n<9; n++) dumpnine("Row: ", n, rows[n].symbols_used);
+        for (unsigned int n=0; n<9; n++) dumpnine("Column: ", n, columns[n].symbols_used);
+        for (unsigned int n=0; n<9; n++) dumpnine("Block: ", n, blocks[n].symbols_used);
+    }
+
 }
 
-bool Sudoku::recurse_into(uint8_t block, uint8_t index)
+void Sudoku::dumpnine(const char* title, int index, const nine& nine)
 {
-    //find the next index and/or block
-    ++index;
-    if (index==9) {
-        index=0;
-        ++block;
-        if (block==9) {
-            // we got to the end without breaking any rules, victory!
-            return true;
-        }
-    }
-    
-    //memory geometry
-    Block* blk=&blocks[block];
-    uint8_t first_horizontal_line=(block/3)*3;
-    uint8_t horizontal_line_offset=index/3;
-    uint8_t this_horizontal_line=first_horizontal_line+horizontal_line_offset;
-    uint8_t first_vertical_line=(block%3)*3;
-    uint8_t vertical_line_offset=index%3;
-    uint8_t this_vertical_line=first_vertical_line+vertical_line_offset;
-    
-    //for us to try inserting symbols in gaps, the gap needs to be empty
-    uint8_t* position_under_test=&blk->positions[index];
-    if (*position_under_test==0) {
-        uint8_t* symbol_is_used=blk->symbols_used;
-        for (uint8_t symbol=1; symbol<10; symbol++) {
-            //and the proposed symbol must not have been used before
-            if (*symbol_is_used==false) {
-                //give it a go
-                *position_under_test=symbol;
-                *symbol_is_used=true;
-                
-                //see if we broke anything
-                bool line_is_wrong=(horizontal_lines[this_horizontal_line].is_wrong() or vertical_lines[this_vertical_line].is_wrong());
-                
-                // recurse in...
-                if (!line_is_wrong and recurse_into(block, index)) return true; // bail if we won
-                
-                //oh well
-                //(we don't actually need to put the blank symbol back in the 'position' because it'll only be overwritten again)
-                *symbol_is_used=false;
-            }
-            ++symbol_is_used;
-        }
-        *position_under_test=0;
-        return false;
-    }
-    
-    return recurse_into(block, index);
-};
+    std::cout << "\033[0;30m" << title << index << " = ";
+    for (int n=0; n<9; n++) std::cout << (nine[n] ? "\033[1;37m" : "\033[0;37m") << n+1 << "\033[0;37m";
+    std::cout <<  "\033[1;37m" << std::endl;
+}
 
-bool Line::is_wrong()
+void Sudoku::solve()
 {
-    // 10 because then we don't have to subtract 1 every time
-    bool used[10] = {false, false, false, false, false, false, false, false, false, false};
-    for (uint8_t n=0; n<9; n++) {
-        uint8_t num=*positions[n];
-        if (num){
-            if (used[num]) return true;
-            used[num] = true;
+    // keep trying till we get to the end
+    uint8_t empty_position=0;
+    uint8_t last_symbol_tried[81] { 0 };  // the last symbol attempted in this location
+    while (empty_position<n_empty_positions) {
+        uint8_t location { empty_positions[empty_position] };
+        Geometry geo { geometry[location] };
+        
+        // try the next symbol in this location
+        uint8_t this_symbol { ++last_symbol_tried[location] };
+        
+//        std::cout << "location=" << static_cast<int>(location);
+        
+        // tried all the symbols?
+        if (this_symbol==10) {
+//            std::cout << "---setting usage to false and stepping back" << std::endl;
+            last_symbol_tried[location]=0;
+            
+            // go back one step
+            --empty_position;
+            location=empty_positions[empty_position];
+            geo=geometry[location];
+            
+            // mark that symbol as unused because we're about to try another
+            uint8_t old_symbol=last_symbol_tried[location];
+            rows[geo.row].symbols_used[old_symbol-1]=false;
+            columns[geo.column].symbols_used[old_symbol-1]=false;
+            blocks[geo.block].symbols_used[old_symbol-1]=false;
+//            dump(true);
+            continue;
         }
+        
+        // will we break any constraints?
+//        std::cout << " this_symbol=" << static_cast<int>(this_symbol);
+        if (rows[geo.row].symbols_used[this_symbol-1]) {
+//            std::cout << " has already been used in row=" << static_cast<int>(geo.row) << std::endl;
+            continue;
+        }
+        if (columns[geo.column].symbols_used[this_symbol-1]) {
+//            std::cout << " has already been used in column=" << static_cast<int>(geo.column) << std::endl;
+            continue;
+        }
+        if (blocks[geo.block].symbols_used[this_symbol-1]) {
+//            std::cout << " has already been used in block=" << static_cast<int>(geo.block) << std::endl;
+            continue;
+        }
+        
+        // so fill the gap in and attempt to move forwards
+//        std::cout << " doesn't break any constraints" << std::endl;
+        rows[geo.row].symbols_used[this_symbol-1]=true;
+        columns[geo.column].symbols_used[this_symbol-1]=true;
+        blocks[geo.block].symbols_used[this_symbol-1]=true;
+        blocks[geo.block].positions[geo.intra_block]=this_symbol;
+        ++empty_position;
+//        dump(true);
     }
-    return false;
 }
-    
-// dump to stdout
-void Line::dump() {
-    for (uint32_t n = 0; n < 9; n++) {
-        std::cout << static_cast<uint32_t>(*positions[n]) << " ";
-    }
-    std::cout << std::endl;
-}
+

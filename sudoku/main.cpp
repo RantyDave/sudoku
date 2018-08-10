@@ -1,17 +1,30 @@
 // Yet another Soduku solver. (c) David Preece 2018
 #include "sudoku.hpp"
 #include <iostream>
+#include <chrono>
+#include <memory>
+
+using namespace std;
 
 // original test puzzle
 // 37........852....71..57.4.9..435.9.893.....258.1.276..2.3.94..65....219........42
+// see also https://raw.githubusercontent.com/horenmar/sudoku-example/master/inputs/benchmark/top95.txt
 
 int main(int argc, const char * argv[]) {
     if (argc!=2) {
-        std::cerr << "Pass the puzzle on the command line" << std::endl;
+        cerr << "Pass the puzzle on the command line" << endl;
         return 1;
     }
-    Sudoku puzzle(argv[1]);
-    puzzle.recurse_into();
-    puzzle.dump();
+    unique_ptr<Sudoku> puzzle(new Sudoku(argv[1]));  // align on a cacheline
+    auto timer { chrono::high_resolution_clock() };
+    
+    puzzle->dump();
+    auto start { timer.now() };
+    puzzle->solve();
+    auto end { timer.now() };
+
+    cout << endl;
+    puzzle->dump();
+    cout << endl << "Took " << chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs" << endl;
     return 0;
 }

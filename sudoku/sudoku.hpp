@@ -6,36 +6,43 @@
 
 typedef uint8_t nine[9];
 
-struct Block
-{
-    nine positions;
-    nine symbols_used {false, false, false, false, false, false, false, false, false};
-};
-
-// an 'as printed' line - nine positions covering three blocks
-struct Line
-{
-    // lines are implemented as pointers to positions in blocks
-    uint8_t* positions[9];
-    
-    // with the current proposed solution, is this line 'wrong' i.e. uses a given symbol more than once?
-    bool is_wrong();
-    
-    // dump to stdout
-    void dump();
-};
+// Takes input strings of the form...
+// 37........852....71..57.4.9..435.9.893.....258.1.276..2.3.94..65....219........42
 
 class Sudoku
 {
 public:
     Sudoku(const char* init_string);
-    void dump();
-    bool recurse_into(uint8_t block=0x00, uint8_t index=0xff);
+    void dump(bool in_detail=false);
+    void solve();
     
 private:
+    void dumpnine(const char* title, int index, const nine& nine);
+    struct Block
+    {
+        nine positions;
+        nine symbols_used {false, false, false, false, false, false, false, false, false};
+    };
+    
+    struct Line
+    {
+        nine symbols_used {false, false, false, false, false, false, false, false, false};
+    };
+    
+    struct Geometry
+    {
+        uint8_t column;
+        uint8_t row;
+        uint8_t block;
+        uint8_t intra_block;
+    };
+    
+    Line columns[9];
+    Line rows[9];
     Block blocks[9];
-    Line horizontal_lines[9];
-    Line vertical_lines[9];
+    Geometry geometry[81];
+    uint8_t empty_positions[81];
+    uint8_t n_empty_positions { 0 };
 };
 
 #endif /* sudoku_hpp */
