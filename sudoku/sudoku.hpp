@@ -17,22 +17,30 @@ public:
     void solve();
     
 private:
-    void dumpnine(const char* title, int index, const nine& nine);
+    void dumpnine(const char* title, int index, const nine& nine, uint8_t symbols_used);
     struct Block
     {
         nine positions;
         nine symbols_used {false, false, false, false, false, false, false, false, false};
+        uint8_t n_symbols_used { 0 };
     };
     
     struct Line
     {
         nine symbols_used {false, false, false, false, false, false, false, false, false};
+        uint8_t n_symbols_used { 0 };
+    };
+    
+    struct Empty
+    {
+        uint8_t position;
+        uint8_t known;
     };
     
     struct Geometry
     {
-        uint8_t column : 4;
         uint8_t row : 4;
+        uint8_t column : 4;
         uint8_t block : 4;
         uint8_t intra_block : 4;
     };
@@ -41,7 +49,7 @@ private:
     Line columns[9];
     Block blocks[9];
     Geometry geometry[81];
-    uint8_t empty_positions[81];
+    Empty empty_positions[81];
     uint8_t n_empty_positions { 0 };
 };
 
