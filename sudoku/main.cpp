@@ -15,11 +15,11 @@ int main(int argc, const char * argv[]) {
         cerr << "Pass the puzzle on the command line" << endl;
         return 1;
     }
-    unique_ptr<Sudoku> puzzle(new Sudoku(argv[1]));  // align on a cacheline
+    
     auto timer { chrono::high_resolution_clock() };
     
-    puzzle->dump();
     auto start { timer.now() };
+    unique_ptr<Sudoku> puzzle(new Sudoku(argv[1]));
     puzzle->solve();
     auto end { timer.now() };
 
