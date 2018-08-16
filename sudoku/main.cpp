@@ -17,14 +17,13 @@ int main(int argc, const char * argv[]) {
     }
     
     auto timer { chrono::high_resolution_clock() };
-    
     auto start { timer.now() };
-    unique_ptr<Sudoku> puzzle(new Sudoku(argv[1]));
-    puzzle->solve();
+    Sudoku puzzle { argv[1] };
+    puzzle.solve();
     auto end { timer.now() };
 
     cout << endl;
-    puzzle->dump();
+    puzzle.dump();
     cout << endl << "Took " << chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs" << endl;
     return 0;
 }

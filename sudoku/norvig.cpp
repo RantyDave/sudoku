@@ -188,9 +188,9 @@ unique_ptr<Sudoku> solve(unique_ptr<Sudoku> S) {
 }
 
 int main(int argc, const char * argv[]) {
-    Sudoku::init();
     auto timer { chrono::high_resolution_clock() };
     auto start { timer.now() };
+    Sudoku::init();
     if (auto S = solve(unique_ptr<Sudoku>(new Sudoku(argv[1])))) {
         auto end { timer.now() };
         S->write(cout);

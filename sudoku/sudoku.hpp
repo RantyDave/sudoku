@@ -17,29 +17,25 @@ public:
     void solve();
     
 private:
-    void dumpnine(const char* title, int index, const nine& nine, uint_fast8_t symbols_used);
+    void dumpnine(const char* title, int index, const nine& nine);
     struct Block
     {
         nine positions;
         nine symbols_used { false, false, false, false, false, false, false, false, false };
-        uint_fast8_t n_symbols_used { 0 };
     };
     
     struct Line
     {
         nine symbols_used { false, false, false, false, false, false, false, false, false };
-        uint_fast8_t n_symbols_used { 0 };
     };
     
     struct Empty
     {
-        Empty() : possible(0), next_possible_to_try(0) {};
         uint_fast8_t position;
-        uint_fast8_t possible;
-        uint_fast8_t next_possible_to_try;
+        uint_fast8_t possible { 9 };  // number of possibles (initially), needed for sorting
+        uint_fast8_t next_possible_to_try { 0 };
         nine possibles { true, true, true, true, true, true, true, true, true };
         void eliminate_for(const nine& symbols);
-        void enlistify();
     };
     
     struct Geometry
@@ -48,6 +44,8 @@ private:
         uint_fast8_t column;
         uint_fast8_t block;
         uint_fast8_t intra_block;
+        uint_fast8_t adjacent_location_horiz;  // 0 means "doesn't have one"
+        uint_fast8_t adjacent_location_vert;
     };
     
     Line rows[9];
