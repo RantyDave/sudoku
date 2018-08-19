@@ -34,3 +34,10 @@
 sudoku.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 sudoku.xcodeproj/project.xcworkspace/xcuserdata/dpreece.xcuserdatad/UserInterfaceState.xcuserstate
 *.xcbkptlist
+sudoku/.ninja_deps
+sudoku/.ninja_log
+sudoku.xcodeproj/project.pbxproj
+sudoku.xcodeproj/xcuserdata/dpreece.xcuserdatad/xcschemes/norvig.xcscheme
+sudoku.xcodeproj/xcuserdata/dpreece.xcuserdatad/xcschemes/soduku.xcscheme
+sudoku.xcodeproj/xcuserdata/dpreece.xcuserdatad/xcschemes/xcschememanagement.plist
+sudoku.xcodeproj/project.pbxproj

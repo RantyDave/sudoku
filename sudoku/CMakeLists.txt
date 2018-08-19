@@ -1,0 +1,15 @@
+cmake_minimum_required (VERSION 3.11)
+project (sudoku)
+
+set(CMAKE_CXX_COMPILER /Library/Developer/CommandLineTools/usr/bin/clang++)
+set(CMAKE_CXX_STANDARD 14)
+include_directories(SYSTEM /Library/Developer/CommandLineTools/usr/include/c++/v1)
+include_directories(/usr/local/include)
+link_directories(/usr/local/lib)
+link_directories(/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib)
+
+add_executable(sudoku main.cpp sudoku.cpp)
+target_link_libraries(sudoku c++)
+add_executable(norvig norvig.cpp)
+target_link_libraries(norvig c++)
+set(CMAKE_BUILD_TYPE Release)
