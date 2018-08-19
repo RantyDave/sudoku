@@ -22,7 +22,6 @@ int main(int argc, const char * argv[]) {
     puzzle.solve();
     auto end { timer.now() };
 
-    cout << endl;
     puzzle.dump();
     cout << endl << "Took " << chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs" << endl;
     return 0;

@@ -3,8 +3,12 @@
 
 #include <cstdint>
 #include <iostream>
+#include <string>
+#include <vector>
+#include <stack>
 
-typedef uint_fast8_t nine[9];
+typedef uint8_t nine[9];
+typedef std::pair<uint8_t, uint8_t> id_possible_pair;
 
 // Takes input strings of the form...
 // 37........852....71..57.4.9..435.9.893.....258.1.276..2.3.94..65....219........42
@@ -17,43 +21,47 @@ public:
     void solve();
     
 private:
-    void dumpnine(const char* title, int index, const nine& nine);
-    struct Block
+    struct Square
     {
-        nine positions;
-        nine symbols_used { false, false, false, false, false, false, false, false, false };
-    };
-    
-    struct Line
-    {
-        nine symbols_used { false, false, false, false, false, false, false, false, false };
-    };
-    
-    struct Empty
-    {
-        uint_fast8_t position;
-        uint_fast8_t possible { 9 };  // number of possibles (initially), needed for sorting
-        uint_fast8_t next_possible_to_try { 0 };
+        uint8_t row;
+        uint8_t column;
+        uint8_t block;
+        uint8_t possible { 9 };  // number of possibles (initially), needed for sorting
         nine possibles { true, true, true, true, true, true, true, true, true };
-        void eliminate_for(const nine& symbols);
+        uint8_t next_possible_to_try { 0 };
+        uint8_t peers[20];
+        
+        bool is_certain() { return possible==1; };
+        uint8_t certain_value();
+        std::string display_location();
+        char display_value();
     };
     
-    struct Geometry
+    struct State
     {
-        uint_fast8_t row;
-        uint_fast8_t column;
-        uint_fast8_t block;
-        uint_fast8_t intra_block;
-        uint_fast8_t adjacent_location_horiz;  // 0 means "doesn't have one"
-        uint_fast8_t adjacent_location_vert;
+        State();
+        bool breaks_constraint(const Square* sqr, uint8_t symbol_minus_one);
+        bool eliminate_from_possibilities(uint8_t square_id, uint8_t symbol);  // true if succeeded
+        
+        // work list item id is stored so we can skip back over 'now certain' squares
+        int item { 0 };
+
+        // the squares themselves
+        Square squares[81];
+        
+        // unit possibilities
+        nine row_possibles[9];
+        nine column_possibles[9];
+        nine block_possibles[9];
     };
+    State state;
     
-    Line rows[9];
-    Line columns[9];
-    Block blocks[9];
-    Geometry geometry[81];
-    Empty empty_positions[81];
-    uint_fast8_t n_empty_positions { 0 };
+    // work ordering and undo
+    std::vector<id_possible_pair> work_list;
+    std::stack<State> state_replacement_stack;
+    
+    // misc
+    void dumpnine(const char* title, int index, const nine& nine);
 };
 
 #endif /* sudoku_hpp */
