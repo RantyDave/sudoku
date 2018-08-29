@@ -130,7 +130,7 @@ void Sudoku::solve()
         
         // was this the last one? then we have to step back (restore pre-modified state)
         if (sqr->next_possible_to_try==9) {
-            state=state_replacement_stack.top();
+            state=std::move(state_replacement_stack.top());
             state_replacement_stack.pop();
 
             //and loop round
