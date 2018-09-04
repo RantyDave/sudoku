@@ -151,7 +151,7 @@ void Sudoku::solve()
         // did it stick? If not, roll back and try the next symbol.
         if (!success) {
 //            std::cout << "...rolling back" << std::endl;
-            state=state_replacement_stack.top();
+            state=std::move(state_replacement_stack.top());
             state_replacement_stack.pop();
             continue;
         }
